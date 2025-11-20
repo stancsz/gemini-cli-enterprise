@@ -8,6 +8,9 @@ import { GovernanceContext } from './types.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import * as https from 'https';
+import * as http from 'http';
+import { URL } from 'url';
 
 export class AuditLogger {
   private logFilePath: string;
@@ -38,6 +41,43 @@ export class AuditLogger {
       output: context.output ? 'Generated Content Present' : 'No Output', // Simplifying output log for brevity in JSONL
     };
 
+    // Local logging
     fs.appendFileSync(this.logFilePath, JSON.stringify(logEntry) + '\n');
+
+    // HTTP Logging (SIEM/Centralized)
+    const endpoint = process.env.GOVERNANCE_LOG_ENDPOINT;
+    if (endpoint) {
+      this.sendToEndpoint(endpoint, logEntry);
+    }
+  }
+
+  private sendToEndpoint(endpoint: string, data: any) {
+    try {
+      const url = new URL(endpoint);
+      const protocol = url.protocol === 'https:' ? https : http;
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+
+      const req = protocol.request(url, options, (res) => {
+        if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+          // Silently fail or log to stderr in debug mode?
+          // For now, strictly following "add-on" module which shouldn't crash the main app.
+          // We could log to a separate error log file.
+        }
+      });
+
+      req.on('error', (e) => {
+        // Prevent crashing the application on network error
+      });
+
+      req.write(JSON.stringify(data));
+      req.end();
+    } catch (error) {
+       // Invalid URL or other sync error
+    }
   }
 }

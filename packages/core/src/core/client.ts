@@ -393,6 +393,7 @@ export class GeminiClient {
     prompt_id: string,
     turns: number = MAX_TURNS,
     isInvalidStreamRetry: boolean = false,
+    governanceApproval: boolean = false,
   ): AsyncGenerator<ServerGeminiStreamEvent, Turn> {
     if (this.lastPromptId !== prompt_id) {
       this.loopDetector.reset(prompt_id);
@@ -500,7 +501,19 @@ export class GeminiClient {
     // We need to convert PartListUnion to Part[] properly. request is PartListUnion which is Content | Part | string | (Part | string)[]
     const parts = toParts(requestParts);
 
-    const governanceResult = this.governanceEngine.interceptRequest(parts, modelToUse, { prompt_id });
+    const governanceResult = this.governanceEngine.interceptRequest(parts, modelToUse, { prompt_id }, { approvalGranted: governanceApproval });
+
+    if (governanceResult.requiresApproval) {
+         yield {
+           type: GeminiEventType.GovernanceConfirmationNeeded,
+           value: {
+             riskLevel: governanceResult.context.riskLevel || 'UNKNOWN',
+             riskCategory: governanceResult.context.riskCategory || 'Unknown Category',
+             justification: governanceResult.context.justification || 'High Risk Detected',
+           }
+         };
+         return turn;
+    }
 
     if (!governanceResult.proceed) {
          // If blocked, we can yield a special error or system message.
@@ -603,6 +616,7 @@ export class GeminiClient {
             prompt_id,
             boundedTurns - 1,
             true, // Set isInvalidStreamRetry to true
+            governanceApproval,
           );
           return turn;
         }
@@ -645,6 +659,8 @@ export class GeminiClient {
           prompt_id,
           boundedTurns - 1,
           // isInvalidStreamRetry is false here, as this is a next speaker check
+          false,
+          governanceApproval,
         );
       }
     }

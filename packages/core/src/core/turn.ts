@@ -64,7 +64,17 @@ export enum GeminiEventType {
   ContextWindowWillOverflow = 'context_window_will_overflow',
   InvalidStream = 'invalid_stream',
   ModelInfo = 'model_info',
+  GovernanceConfirmationNeeded = 'governance_confirmation_needed',
 }
+
+export type ServerGeminiGovernanceConfirmationNeededEvent = {
+  type: GeminiEventType.GovernanceConfirmationNeeded;
+  value: {
+    riskLevel: string;
+    riskCategory: string;
+    justification: string;
+  };
+};
 
 export type ServerGeminiRetryEvent = {
   type: GeminiEventType.Retry;
@@ -220,7 +230,8 @@ export type ServerGeminiStreamEvent =
   | ServerGeminiRetryEvent
   | ServerGeminiContextWindowWillOverflowEvent
   | ServerGeminiInvalidStreamEvent
-  | ServerGeminiModelInfoEvent;
+  | ServerGeminiModelInfoEvent
+  | ServerGeminiGovernanceConfirmationNeededEvent;
 
 // A turn manages the agentic loop turn within the server context.
 export class Turn {

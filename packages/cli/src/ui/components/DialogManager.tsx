@@ -7,6 +7,7 @@
 import { Box, Text } from 'ink';
 import { IdeIntegrationNudge } from '../IdeIntegrationNudge.js';
 import { LoopDetectionConfirmation } from './LoopDetectionConfirmation.js';
+import { GovernanceConfirmationDialog } from './GovernanceConfirmationDialog.js';
 import { FolderTrustDialog } from './FolderTrustDialog.js';
 import { ShellConfirmationDialog } from './ShellConfirmationDialog.js';
 import { ConsentPrompt } from './ConsentPrompt.js';
@@ -88,6 +89,16 @@ export const DialogManager = ({
     return (
       <LoopDetectionConfirmation
         onComplete={uiState.loopDetectionConfirmationRequest.onComplete}
+      />
+    );
+  }
+  if (uiState.governanceConfirmationRequest) {
+    return (
+      <GovernanceConfirmationDialog
+        riskLevel={uiState.governanceConfirmationRequest.value.riskLevel}
+        riskCategory={uiState.governanceConfirmationRequest.value.riskCategory}
+        justification={uiState.governanceConfirmationRequest.value.justification}
+        onComplete={uiState.governanceConfirmationRequest.onComplete}
       />
     );
   }

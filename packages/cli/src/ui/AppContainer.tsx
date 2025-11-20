@@ -703,6 +703,7 @@ Logging in with Google... Please restart Gemini CLI to continue.
     handleApprovalModeChange,
     activePtyId,
     loopDetectionConfirmationRequest,
+    governanceConfirmationRequest,
   } = useGeminiStream(
     config.getGeminiClient(),
     historyManager.history,
@@ -1316,6 +1317,7 @@ Logging in with Google... Please restart Gemini CLI to continue.
     !!customDialog ||
     confirmUpdateExtensionRequests.length > 0 ||
     !!loopDetectionConfirmationRequest ||
+    !!governanceConfirmationRequest ||
     isThemeDialogOpen ||
     isSettingsDialogOpen ||
     isModelDialogOpen ||
@@ -1408,6 +1410,7 @@ Logging in with Google... Please restart Gemini CLI to continue.
       confirmationRequest,
       confirmUpdateExtensionRequests,
       loopDetectionConfirmationRequest,
+      governanceConfirmationRequest,
       geminiMdFileCount,
       streamingState,
       initError,

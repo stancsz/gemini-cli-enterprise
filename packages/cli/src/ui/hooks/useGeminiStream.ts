@@ -852,6 +852,25 @@ export const useGeminiStream = (
           case ServerGeminiEventType.InvalidStream:
             // Will add the missing logic later
             break;
+          case ServerGeminiEventType.GovernanceConfirmationNeeded:
+             setGovernanceConfirmationRequest({
+               value: event.value,
+               onComplete: (result) => {
+                 setGovernanceConfirmationRequest(null);
+                 if (result.userSelection === 'confirm') {
+                    if (lastQueryRef.current && lastPromptIdRef.current) {
+                        submitQuery(lastQueryRef.current, { isContinuation: false }, lastPromptIdRef.current, true);
+                    }
+                 } else {
+                    addItem(
+                        { type: MessageType.INFO, text: 'Request rejected by user due to high risk.' },
+                        userMessageTimestamp
+                    );
+                    setIsResponding(false);
+                 }
+               }
+             });
+             break;
           default: {
             // enforces exhaustive switch-case
             const unreachable: never = event;
@@ -882,6 +901,7 @@ export const useGeminiStream = (
       query: PartListUnion,
       options?: { isContinuation: boolean },
       prompt_id?: string,
+      governanceApproval?: boolean,
     ) =>
       runInDevTraceSpan(
         { name: 'submitQuery' },
@@ -953,6 +973,9 @@ export const useGeminiStream = (
                 queryToSend,
                 abortSignal,
                 prompt_id!,
+                undefined, // MAX_TURNS
+                false, // isInvalidStreamRetry
+                governanceApproval,
               );
               const processingStatus = await processGeminiStreamEvents(
                 stream,
@@ -1350,8 +1373,14 @@ export const useGeminiStream = (
     storage,
   ]);
 
+  const [governanceConfirmationRequest, setGovernanceConfirmationRequest] = useState<{
+    value: { riskLevel: string; riskCategory: string; justification: string };
+    onComplete: (result: { userSelection: 'confirm' | 'reject' }) => void;
+  } | null>(null);
+
   return {
     streamingState,
+    governanceConfirmationRequest,
     submitQuery,
     initError,
     pendingHistoryItems,
