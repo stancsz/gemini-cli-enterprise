@@ -8,7 +8,7 @@ import { PIIFilter } from './PIIFilter.js';
 import { RiskClassifier } from './RiskClassifier.js';
 import { OutputGuardrail } from './OutputGuardrail.js';
 import { AuditLogger } from './AuditLogger.js';
-import { GovernanceContext, RiskLevel, DEFAULT_POLICIES } from './types.js';
+import { type GovernanceContext, RiskLevel, DEFAULT_POLICIES } from './types.js';
 import type { Part, GenerateContentResponse } from '@google/genai';
 import { randomUUID } from 'crypto';
 
@@ -29,7 +29,7 @@ export class GovernanceEngine {
   interceptRequest(input: Part[], modelVersion: string, modelParams: Record<string, unknown>): { context: GovernanceContext; proceed: boolean; error?: string } {
     const requestId = randomUUID();
     // Ideally get user ID from config or auth context
-    const userId = process.env.USER || 'unknown_user';
+    const userId = process.env['USER'] || 'unknown_user';
 
     let redactedInput = input;
     let justification = '';
@@ -66,7 +66,7 @@ export class GovernanceEngine {
     return { context, proceed: true };
   }
 
-  interceptResponse(context: GovernanceContext, response: GenerateContentResponse): { response: GenerateContentResponse; proceed: boolean; error?: string } {
+  interceptResponse(context: GovernanceContext, response: GenerateContentResponse): { response: GenerateContentResponse; proceed: boolean; error?: string; decision?: string } {
     context.output = response;
     const { decision, reason } = this.outputGuardrail.validate(response, context.riskLevel || RiskLevel.LOW);
     context.guardrailDecision = decision;
@@ -81,33 +81,11 @@ export class GovernanceEngine {
         return { response, proceed: false, error: 'Output blocked: ' + reason };
     }
 
-    // If FLAGGED_FOR_REVIEW, we essentially still return it but maybe with a warning attached to the response?
-    // For this implementation, we will assume the CLI needs to handle it.
-    // We'll wrap the response text if possible or just let it through but logged as flagged.
-    // The requirement: "block automated output until a human supervisor ... explicitly approves it."
-    // In a CLI tool, the user IS the supervisor usually. But for enterprise compliance, maybe we block it.
-
     if (decision === 'FLAGGED_FOR_REVIEW') {
-         // We can simulate blocking by returning an error or a specific message.
-         // Let's append a warning to the output for now, as strictly blocking might break the user experience too much for this demo.
-         // OR we modify the response to say "[ governance review required ]"
-
-         // Better approach for "add-on": Let's assume if it's flagged, we should warn the user.
-         // But strict compliance says "block".
-         // Let's return proceed: true but maybe modify the response text to include a warning header.
-         // Accessing and modifying response candidates is tricky if they are frozen, but let's try.
-
-         if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
-             const parts = response.candidates[0].content.parts;
-             const warning = `\n\n[GOVERNANCE WARNING: This output was flagged for human review due to High Risk category: ${context.riskCategory}]\n\n`;
-             if (parts[0].text) {
-                 parts[0].text = warning + parts[0].text;
-             } else {
-                 parts.unshift({ text: warning });
-             }
-         }
+        // Logic moved to client layer to handle interactivity using the decision status
+        return { response, proceed: true, error: 'Output flagged for review', decision: 'FLAGGED_FOR_REVIEW' };
     }
 
-    return { response, proceed: true };
+    return { response, proceed: true, decision: 'APPROVED' };
   }
 }

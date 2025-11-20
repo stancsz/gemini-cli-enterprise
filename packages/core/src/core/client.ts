@@ -54,6 +54,7 @@ import { debugLogger } from '../utils/debugLogger.js';
 import type { ModelConfigKey } from '../services/modelConfigService.js';
 import { GovernanceEngine } from '../governance/GovernanceEngine.js';
 import { toParts } from '../code_assist/converter.js';
+import { confirmHighRiskAction } from '../governance/interactive.js';
 
 const MAX_TURNS = 100;
 
@@ -577,6 +578,12 @@ export class GeminiClient {
                    // We log this violation.
                    debugLogger.log('[GOVERNANCE VIOLATION] High-Risk content streamed before it could be blocked.');
               }
+
+              // Suggestive Action 3: HITL Workflow for High Risk
+              if (govResponse.decision === 'FLAGGED_FOR_REVIEW') {
+                   // This is post-streaming, so we ask for confirmation "that you have reviewed it"
+                   await confirmHighRiskAction('This output is classified as High Risk. Do you confirm you have reviewed it?');
+              }
           }
       }
 
@@ -718,6 +725,14 @@ export class GeminiClient {
 
         if (!governanceRes.proceed) {
              throw new Error(`Governance Output Block: ${governanceRes.error}`);
+        }
+
+        if (governanceRes.decision === 'FLAGGED_FOR_REVIEW') {
+            // Suggestive Action 3: HITL Workflow
+            const confirmed = await confirmHighRiskAction('This output is classified as High Risk. Do you confirm you have reviewed it?');
+            if (!confirmed) {
+                throw new Error('Governance Block: User declined to confirm High Risk content.');
+            }
         }
 
         return governanceRes.response;

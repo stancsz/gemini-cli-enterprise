@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GovernanceContext } from './types.js';
+import type { GovernanceContext } from './types.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -39,5 +39,18 @@ export class AuditLogger {
     };
 
     fs.appendFileSync(this.logFilePath, JSON.stringify(logEntry) + '\n');
+
+    // Send to centralized SIEM if configured
+    const endpoint = process.env['GOVERNANCE_LOG_ENDPOINT'];
+    if (endpoint) {
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(logEntry)
+        }).catch(err => {
+            // Silently fail to avoid disrupting the user flow, but maybe log to debug
+            // console.error('Failed to send log to SIEM:', err);
+        });
+    }
   }
 }

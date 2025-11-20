@@ -1,7 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GovernanceEngine } from './GovernanceEngine';
-import { RiskLevel } from './types';
+import { GovernanceEngine } from './GovernanceEngine.js';
+import { RiskLevel } from './types.js';
 import type { Part } from '@google/genai';
 
 // Mock dependencies
@@ -69,9 +69,8 @@ describe('GovernanceEngine', () => {
     } as any;
 
     const result = engine.interceptResponse(context, response);
-    // It proceeds but modifies text with warning
+    // It proceeds but returns status
     expect(result.proceed).toBe(true);
-    const text = result.response.candidates![0].content.parts![0].text;
-    expect(text).toContain('[GOVERNANCE WARNING');
+    expect(result.decision).toBe('FLAGGED_FOR_REVIEW');
   });
 });
