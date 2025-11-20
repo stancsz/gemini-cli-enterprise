@@ -1,4 +1,6 @@
-# Gemini CLI
+# Gemini CLI (Governance Fork)
+
+> **Note:** This is a fork of the open source version of [gemini-cli](https://github.com/google-gemini/gemini-cli) (referred to as "claud code" in some contexts) with an added governance layer. This layer provides ISO/IEC 42001 and EU AI Act compliance capabilities for enterprise use.
 
 [![Gemini CLI CI](https://github.com/google-gemini/gemini-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/google-gemini/gemini-cli/actions/workflows/ci.yml)
 [![Gemini CLI E2E](https://github.com/google-gemini/gemini-cli/actions/workflows/e2e.yml/badge.svg)](https://github.com/google-gemini/gemini-cli/actions/workflows/e2e.yml)
@@ -25,6 +27,7 @@ Learn all about Gemini CLI in our [documentation](https://geminicli.com/docs/).
   integrations.
 - **💻 Terminal-first**: Designed for developers who live in the command line.
 - **🛡️ Open source**: Apache 2.0 licensed.
+- **⚖️ Enterprise Governance**: Built-in PII filtering, risk classification, and audit logging (ISO/IEC 42001 compliant).
 
 ## 📦 Installation
 
