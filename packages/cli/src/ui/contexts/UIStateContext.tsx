@@ -135,6 +135,10 @@ export interface UIState {
   };
   bannerVisible: boolean;
   customDialog: React.ReactNode | null;
+  governanceConfirmationRequest?: {
+    value: { riskLevel: string; riskCategory: string; justification: string };
+    onComplete: (result: { userSelection: 'confirm' | 'reject' }) => void;
+  } | null;
 }
 
 export const UIStateContext = createContext<UIState | null>(null);

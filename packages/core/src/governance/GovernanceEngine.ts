@@ -26,7 +26,12 @@ export class GovernanceEngine {
     this.auditLogger = new AuditLogger();
   }
 
-  interceptRequest(input: Part[], modelVersion: string, modelParams: Record<string, unknown>): { context: GovernanceContext; proceed: boolean; error?: string } {
+  interceptRequest(
+    input: Part[],
+    modelVersion: string,
+    modelParams: Record<string, unknown>,
+    options: { approvalGranted?: boolean } = {}
+  ): { context: GovernanceContext; proceed: boolean; error?: string; requiresApproval?: boolean } {
     const requestId = randomUUID();
     // Ideally get user ID from config or auth context
     const userId = process.env.USER || 'unknown_user';
@@ -61,6 +66,13 @@ export class GovernanceEngine {
        context.guardrailDecision = 'BLOCKED';
        this.auditLogger.log(context);
        return { context, proceed: false, error: 'Request blocked due to High Risk policy.' };
+    }
+
+    // Human-in-the-Loop Check
+    if (level === RiskLevel.HIGH && !options.approvalGranted) {
+        // Instead of blocking, we require approval
+        // We don't log as blocked yet, we return requiresApproval
+        return { context, proceed: false, requiresApproval: true };
     }
 
     return { context, proceed: true };

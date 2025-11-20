@@ -5,11 +5,12 @@ import { RiskLevel } from './types';
 import type { Part } from '@google/genai';
 
 // Mock dependencies
+// Vitest mock factory needs to return the module structure
 vi.mock('./AuditLogger', () => {
   return {
-    AuditLogger: vi.fn().mockImplementation(() => ({
-      log: vi.fn(),
-    })),
+    AuditLogger: class {
+      log = vi.fn();
+    },
   };
 });
 
@@ -38,16 +39,22 @@ describe('GovernanceEngine', () => {
     expect(result.context.riskCategory).toBe('HR Decision');
   });
 
-  it('should block input if blockHighRisk policy is enabled (default is false)', () => {
-    // By default blockHighRisk is false in our code, so it proceeds.
-    // Let's modify the policy in the instance if we could, or just check it classifies correctly.
-    // If we want to test blocking, we need to change the default policy or provide a way to config.
-    // Since policy is private and hardcoded to DEFAULT in constructor, we can't easily change it without reflection or modifying source.
-    // However, we can check that it *doesn't* block by default but flags it.
-
+  it('should require approval if high risk', () => {
     const input: Part[] = [{ text: 'I need to fire employee' }];
     const result = engine.interceptRequest(input, 'model-v1', {});
-    expect(result.proceed).toBe(true); // Should proceed by default
+
+    // With new logic, High Risk requires approval and returns proceed: false, requiresApproval: true
+    expect(result.proceed).toBe(false);
+    expect(result.requiresApproval).toBe(true);
+    expect(result.context.riskLevel).toBe(RiskLevel.HIGH);
+  });
+
+  it('should proceed if high risk but approval granted', () => {
+    const input: Part[] = [{ text: 'I need to fire employee' }];
+    const result = engine.interceptRequest(input, 'model-v1', {}, { approvalGranted: true });
+
+    expect(result.proceed).toBe(true);
+    expect(result.requiresApproval).toBeUndefined();
     expect(result.context.riskLevel).toBe(RiskLevel.HIGH);
   });
 
